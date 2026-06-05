@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#E87722">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="衛生法規">
+  <title>衛生法規 暗記アプリ</title>
+  <style>
+    :root {
+      --orange: #E87722;
+      --orange-light: #FFF0E0;
+      --orange-dark: #C45F00;
+      --green: #2E9E5B;
+      --green-light: #E6F7ED;
+      --red: #D94040;
+      --red-light: #FDEAEA;
+      --bg: #FFF8F0;
+      --card: #FFFFFF;
+      --text: #2D2D2D;
+      --sub: #666666;
+      --border: #E0C8A8;
+      --r: 16px;
+      --sh: 0 4px 16px rgba(0,0,0,0.10);
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      -webkit-tap-highlight-color: rgba(0,0,0,0);
+    }
+    html { height: 100%; }
+    body {
+      font-family: -apple-system, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 17px;
+      min-height: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- SCREENS --- */
+    .screen { display: none; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* --- HOME --- */
+    #scr-home {
+      align-items: center;
+      min-height: 100vh;
+      padding: 44px 20px 48px;
+      background: linear-gradient(160deg, #FFF0D8 0%, #FFF8F0 60%);
+      gap: 0;
+    }
+    .home-logo { font-size: 54px; margin-bottom: 6px; }
+    .home-title { font-size: 22px; font-weight: 800; color: var(--orange-dark); margin-bottom: 4px; }
+    .home-sub { font-size: 13px; color: var(--sub); margin-bottom: 22px; }
+
+    .stats-row {
+      background: var(--card);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      box-shadow: var(--sh);
+      width: 100%; max-width: 420px;
+      padding: 14px 8px;
+      display: flex; justify-content: space-around;
+      margin-bottom: 10px;
+    }
+    .stat { text-align: center; }
+    .stat-n { font-size: 26px; font-weight: 800; color: var(--orange); }
+    .stat-l { font-size: 12px; color: var(--sub); margin-top: 2px; }
+    #home-last { font-size: 13px; color: var(--sub); margin-bottom: 22px; }
+
+    /* Mode cards */
+    .mode-cards { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+    .mode-card {
+      width: 100%;
+      background: var(--card);
+      border-radius: var(--r);
+      border: 2px solid var(--border);
+      box-shadow: var(--sh);
+      padding: 18px 20px;
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer;
+      touch-action: manipulation;
+      text-align: left;
+      font-family: inherit;
+      transition: border-color .15s, background .15s;
+    }
+    .mode-card.sel { border-color: var(--orange); background: var(--orange-light); }
+    .mode-card:active { opacity: .85; }
+    .mc-icon { font-size: 30px; flex-shrink: 0; }
+    .mc-body { flex: 1; }
+    .mc-name { font-size: 17px; font-weight: 700; }
+    .mc-desc { font-size: 13px; color: var(--sub); margin-top: 2px; }
+    .mc-check { font-size: 20px; color: var(--orange); flex-shrink: 0; }
+
+    /* Options */
+    .opts {
+      background: var(--card);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      box-shadow: var(--sh);
+      width: 100%; max-width: 420px;
+      padding: 4px 20px;
+      margin-bottom: 22px;
+    }
+    .opt-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0;
+    }
+    .opt-row + .opt-row { border-top: 1px solid #F0E0CC; }
+    .opt-lbl { font-size: 16px; font-weight: 600; }
+    .sw { position: relative; width: 52px; height: 30px; flex-shrink: 0; }
+    .sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .sw-track {
+      position: absolute; inset: 0;
+      background: #CCC; border-radius: 30px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background .2s;
+    }
+    .sw-track::before {
+      content: '';
+      position: absolute;
+      width: 24px; height: 24px;
+      left: 3px; top: 3px;
+      background: #fff; border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+      transition: transform .2s;
+    }
+    .sw input:checked ~ .sw-track { background: var(--orange); }
+    .sw input:checked ~ .sw-track::before { transform: translateX(22px); }
+
+    /* Buttons on home */
+    .btn-start {
+      width: 100%; max-width: 420px;
+      background: var(--orange); color: #fff;
+      border: none; border-radius: 50px;
+      padding: 18px; font-size: 19px; font-weight: 800;
+      cursor: pointer; touch-action: manipulation;
+      font-family: inherit;
+      box-shadow: 0 4px 18px rgba(232,119,34,.4);
+      margin-bottom: 12px;
+      transition: background .15s;
+    }
+    .btn-start:active { background: var(--orange-dark); }
+    .btn-ghost {
+      background: none; color: var(--sub);
+      border: 2px solid var(--border);
+      border-radius: 50px; padding: 12px 24px;
+      font-size: 15px; font-family: inherit;
+      cursor: pointer; touch-action: manipulation;
+      transition: border-color .15s;
+    }
+    .btn-ghost:active { border-color: var(--red); color: var(--red); }
+
+    /* --- QUIZ HEADER --- */
+    .qhdr {
+      background: var(--orange); color: #fff;
+      padding: 14px 18px 12px;
+      position: sticky; top: 0; z-index: 20;
+      flex-shrink: 0;
+    }
+    .qhdr-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .btn-back {
+      background: rgba(255,255,255,.22); border: none; border-radius: 50%;
+      width: 38px; height: 38px; color: #fff; font-size: 22px;
+      cursor: pointer; touch-action: manipulation;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .btn-back:active { background: rgba(255,255,255,.4); }
+    .mode-pill {
+      font-size: 13px; font-weight: 700;
+      background: rgba(255,255,255,.25);
+      padding: 4px 12px; border-radius: 20px;
+    }
+    .qcounter { font-size: 15px; font-weight: 600; }
+    .prog-wrap {
+      background: rgba(255,255,255,.3);
+      border-radius: 10px; height: 8px; overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%; background: #fff; border-radius: 10px;
+      transition: width .4s ease; width: 0%;
+    }
+
+    /* --- QUIZ BODY --- */
+    #quiz-body {
+      flex: 1;
+      padding: 18px 16px 48px;
+      display: flex; flex-direction: column; gap: 14px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .cat-badge {
+      display: inline-block;
+      background: var(--orange-light); color: var(--orange-dark);
+      font-size: 13px; font-weight: 700;
+      padding: 5px 14px; border-radius: 20px;
+      border: 1px solid #F0C890;
+      word-break: keep-all;
+    }
+    .q-card {
+      background: var(--card);
+      border-radius: var(--r); border: 1px solid var(--border);
+      box-shadow: var(--sh);
+      padding: 20px 18px;
+      font-size: 17px; line-height: 2; letter-spacing: .03em;
+    }
+    .blank {
+      display: inline-block;
+      background: #FFF0D0; border: 2px solid var(--orange);
+      border-radius: 6px; padding: 2px 10px;
+      font-weight: 700; color: var(--orange-dark);
+      min-width: 56px; text-align: center;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .blank.ok  { background: var(--green-light); border-color: var(--green); color: var(--green); }
+    .blank.ng  { background: var(--red-light);   border-color: var(--red);   color: var(--red);   }
+
+    .score-bar {
+      background: var(--card); border-radius: 12px;
+      padding: 10px 16px; border: 1px solid var(--border);
+      display: flex; gap: 14px; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .s-ok { color: var(--green); font-weight: 700; }
+    .s-ng { color: var(--red); font-weight: 700; }
+    .s-all { color: var(--sub); }
+
+    /* Input mode */
+    .inp-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .ans-inp {
+      width: 100%; padding: 15px 16px; font-size: 18px;
+      border: 2px solid var(--border); border-radius: 12px;
+      background: #fff; outline: none; font-family: inherit;
+      -webkit-appearance: none;
+      transition: border-color .15s;
+    }
+    .ans-inp:focus { border-color: var(--orange); }
+    .btn-judge {
+      background: var(--orange); color: #fff; border: none;
+      border-radius: 50px; padding: 15px;
+      font-size: 17px; font-weight: 700; font-family: inherit;
+      cursor: pointer; touch-action: manipulation;
+      transition: background .15s;
+    }
+    .btn-judge:active { background: var(--orange-dark); }
+    .btn-judge:disabled { background: #CCC; cursor: default; }
+
+    /* Feedback */
+    .fb {
+      display: none;
+      border-radius: var(--r); padding: 16px 18px;
+      font-size: 17px; font-weight: 700;
+      align-items: center; gap: 12px;
+    }
+    .fb.show { display: flex; }
+    .fb.ok { background: var(--green-light); border: 2px solid var(--green); color: var(--green); }
+    .fb.ng { background: var(--red-light);   border: 2px solid var(--red);   color: var(--red); }
+    .fb-ico { font-size: 26px; flex-shrink: 0; }
+    .fb-txt { flex: 1; line-height: 1.5; }
+
+    /* Choices */
+    .choices { display: flex; flex-direction: column; gap: 10px; }
+    .choice {
+      width: 100%;
+      background: var(--card); border: 2px solid var(--border);
+      border-radius: 12px; padding: 15px 16px;
+      font-size: 17px; font-weight: 600; font-family: inherit;
+      cursor: pointer; touch-action: manipulation;
+      text-align: left;
+      display: flex; align-items: center; gap: 12px;
+      color: var(--text);
+      transition: background .15s, border-color .15s;
+    }
+    .choice:active:not(:disabled) { opacity: .8; }
+    .choice.ok { background: var(--green-light); border-color: var(--green); color: var(--green); }
+    .choice.ng { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+    .choice.reveal { background: var(--green-light); border-color: var(--green); color: var(--green); }
+    .choice:disabled { cursor: default; }
+    .c-lbl {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--border); color: var(--sub);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; flex-shrink: 0;
+      transition: background .15s, color .15s;
+    }
+    .choice.ok .c-lbl,
+    .choice.reveal .c-lbl { background: var(--green); color: #fff; }
+    .choice.ng .c-lbl     { background: var(--red); color: #fff; }
+
+    /* Next button */
+    .btn-next {
+      display: none;
+      background: var(--orange); color: #fff; border: none;
+      border-radius: 50px; padding: 16px; font-size: 17px;
+      font-weight: 700; font-family: inherit;
+      cursor: pointer; touch-action: manipulation;
+      width: 100%;
+      box-shadow: 0 4px 14px rgba(232,119,34,.35);
+      transition: background .15s;
+    }
+    .btn-next.show { display: block; }
+    .btn-next:active { background: var(--orange-dark); }
+
+    /* --- RESULT --- */
+    #scr-result {
+      align-items: center;
+      min-height: 100vh;
+      padding: 44px 20px 48px;
+      background: linear-gradient(160deg, #FFF0D8 0%, #FFF8F0 60%);
+      gap: 0;
+    }
+    .res-emoji { font-size: 68px; margin-bottom: 10px; }
+    .res-title { font-size: 22px; font-weight: 800; color: var(--orange-dark); margin-bottom: 8px; }
+    .res-pct { font-size: 64px; font-weight: 900; color: var(--orange); margin-bottom: 4px; }
+    .res-pct span { font-size: 28px; }
+    .res-detail { font-size: 15px; color: var(--sub); margin-bottom: 26px; }
+    .res-btns { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
+    .btn-res {
+      width: 100%; border: none; border-radius: 50px; padding: 16px;
+      font-size: 17px; font-weight: 700; font-family: inherit;
+      cursor: pointer; touch-action: manipulation;
+      transition: opacity .15s;
+    }
+    .btn-res:active { opacity: .8; }
+    .btn-res.primary { background: var(--orange); color: #fff; box-shadow: 0 4px 14px rgba(232,119,34,.35); }
+    .btn-res.danger  { background: #fff; color: var(--red); border: 2px solid var(--red); }
+    .btn-res.ghost   { background: #fff; color: var(--sub); border: 2px solid var(--border); }
+    .wrong-card {
+      background: var(--card); border-radius: var(--r);
+      border: 1px solid var(--border); box-shadow: var(--sh);
+      padding: 18px 18px; width: 100%; max-width: 420px;
+      margin-top: 22px;
+    }
+    .wrong-title { font-size: 16px; font-weight: 700; color: var(--red); margin-bottom: 10px; }
+    .wrong-item {
+      font-size: 14px; color: var(--text); padding: 8px 0;
+      border-bottom: 1px solid #F0E0CC; line-height: 1.5;
+    }
+    .wrong-item:last-child { border-bottom: none; }
+    .wrong-ans { color: var(--orange); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="scr-home" class="screen">
+  <div class="home-logo">📖</div>
+  <div class="home-title">衛生法規 暗記アプリ</div>
+  <div class="home-sub">１学期試験対策プリント</div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-n" id="s-total">41</div><div class="stat-l">全問題数</div></div>
+    <div class="stat"><div class="stat-n" id="s-master">0</div><div class="stat-l">習得済み</div></div>
+    <div class="stat"><div class="stat-n" id="s-rate">0%</div><div class="stat-l">正答率</div></div>
+  </div>
+  <div id="home-last">最終学習：まだ学習していません</div>
+
+  <div class="mode-cards">
+    <button class="mode-card sel" id="mc-input" type="button">
+      <span class="mc-icon">✏️</span>
+      <span class="mc-body">
+        <span class="mc-name">入力モード</span>
+        <span class="mc-desc" style="display:block">答えをキーボードで入力して確認</span>
+      </span>
+      <span class="mc-check" id="chk-input">✓</span>
+    </button>
+    <button class="mode-card" id="mc-choice" type="button">
+      <span class="mc-icon">🔘</span>
+      <span class="mc-body">
+        <span class="mc-name">４択モード</span>
+        <span class="mc-desc" style="display:block">４つの選択肢から正解を選ぶ</span>
+      </span>
+      <span class="mc-check" id="chk-choice" style="visibility:hidden">✓</span>
+    </button>
+  </div>
+
+  <div class="opts">
+    <div class="opt-row">
+      <span class="opt-lbl">🔀 ランダム出題</span>
+      <label class="sw">
+        <input type="checkbox" id="opt-rand" checked>
+        <span class="sw-track"></span>
+      </label>
+    </div>
+    <div class="opt-row">
+      <span class="opt-lbl">❌ 間違えた問題のみ</span>
+      <label class="sw">
+        <input type="checkbox" id="opt-miss">
+        <span class="sw-track"></span>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn-start" id="btn-start" type="button">スタート ▶</button>
+  <button class="btn-ghost" id="btn-reset" type="button">学習履歴をリセット</button>
+</div>
+
+<!-- QUIZ -->
+<div id="scr-quiz" class="screen">
+  <div class="qhdr">
+    <div class="qhdr-top">
+      <button class="btn-back" id="btn-back" type="button">‹</button>
+      <span class="mode-pill" id="mode-pill">✏️ 入力モード</span>
+      <span class="qcounter" id="q-count">1 / 41</span>
+    </div>
+    <div class="prog-wrap"><div class="prog-fill" id="prog"></div></div>
+  </div>
+  <div id="quiz-body"></div>
+</div>
+
+<!-- RESULT -->
+<div id="scr-result" class="screen">
+  <div class="res-emoji" id="r-emoji">🎉</div>
+  <div class="res-title">お疲れさまでした！</div>
+  <div class="res-pct" id="r-pct">0<span>%</span></div>
+  <div class="res-detail" id="r-detail">0問正解 / 0問中</div>
+
+  <div class="res-btns">
+    <button class="btn-res primary" id="btn-retry" type="button">🔄 もう一度</button>
+    <button class="btn-res danger"  id="btn-review" type="button">❌ 間違えた問題を復習</button>
+    <button class="btn-res ghost"   id="btn-rhome"  type="button">🏠 ホームに戻る</button>
+  </div>
+  <div class="wrong-card" id="wrong-card" style="display:none">
+    <div class="wrong-title">❌ 間違えた問題</div>
+    <div id="wrong-body"></div>
+  </div>
+</div>
+
+<script>
+/* ======================================================
+   問題データ
+====================================================== */
+var Q = [
+  { id:1,  cat:"①調理師法の目的",
+    q:"この法律は、調理師の資格等を定めて調理の業務に従事する者の【】を向上させることにより、調理技術の合理的な発達を図り、もって国民の食生活の向上に資することを目的とする。",
+    a:"資質", ch:["資質","資格","知識","技能"] },
+  { id:2,  cat:"①調理師法の目的",
+    q:"…調理の業務に従事する者の資質を向上させることにより【】の合理的な発達を図り、もって国民の食生活の向上に資することを目的とする。",
+    a:"調理技術", ch:["調理技術","調理方法","調理技能","調理知識"] },
+  { id:3,  cat:"①調理師法の目的",
+    q:"…調理技術の合理的な発達を図り、もって【】の向上に資することを目的とする。",
+    a:"国民の食生活", ch:["国民の食生活","国民の健康","食品の安全","公衆衛生"] },
+  { id:4,  cat:"②調理師の定義",
+    q:"この法律で「調理師」とは、調理師の【】を用いて調理の業務に従事することができる者として都道府県知事の免許を受けた者をいう。",
+    a:"名称", ch:["名称","資格","免許証","登録番号"] },
+  { id:5,  cat:"②調理師の定義",
+    q:"「調理師」とは、調理師の名称を用いて調理の業務に従事することができる者として【】の免許を受けた者をいう。",
+    a:"都道府県知事", ch:["都道府県知事","厚生労働大臣","市町村長","保健所長"] },
+  { id:6,  cat:"②調理師の定義（名称の使用制限）",
+    q:"調理師でなければ、調理師又はこれに紛らわしい【】を用いてはならない。",
+    a:"名称", ch:["名称","資格","免許","称号"] },
+  { id:7,  cat:"②調理師の定義（罰則）",
+    q:"第八条の規定に違反した者は、【】に処する。",
+    a:"30万円以下の罰金", ch:["30万円以下の罰金","20万円以下の罰金","50万円以下の罰金","拘留"] },
+  { id:8,  cat:"③調理師の免許",
+    q:"調理師の免許は、次の各号の一に該当する者に対し、その申請に基づいて【】が与える。",
+    a:"都道府県知事", ch:["都道府県知事","厚生労働大臣","市町村長","保健所長"] },
+  { id:9,  cat:"③調理師の免許（第三条一号）",
+    q:"【】（昭和二十二年法律第二十六号）第五十七条（高等学校の入学資格）に規定する者で、都道府県知事の指定する調理師養成施設において1年以上の知識・技能を修得したもの",
+    a:"学校教育法", ch:["学校教育法","食品衛生法","調理師法","医療法"] },
+  { id:10, cat:"③調理師の免許（第三条一号）",
+    q:"学校教育法第五十七条（【】の入学資格）に規定する者で、都道府県知事の指定する調理師養成施設において1年以上の知識・技能を修得したもの",
+    a:"高等学校", ch:["高等学校","大学","専門学校","中学校"] },
+  { id:11, cat:"③調理師の免許（第三条一号）",
+    q:"都道府県知事の指定する【】において、1年以上、調理、栄養及び衛生に関して調理師たるに必要な知識及び技能を修得したもの",
+    a:"調理師養成施設", ch:["調理師養成施設","専門学校","職業訓練校","調理技術学校"] },
+  { id:12, cat:"③調理師の免許（第三条一号）",
+    q:"都道府県知事の指定する調理師養成施設において、【】以上、調理、栄養及び衛生に関して調理師たるに必要な知識及び技能を修得したもの",
+    a:"1年", ch:["1年","2年","3年","6か月"] },
+  { id:13, cat:"③調理師の免許（第三条二号）",
+    q:"多数人に対して飲食物を調理して供与する施設又は営業で【】の定めるものにおいて2年以上調理の業務に従事した後、調理師試験に合格したもの",
+    a:"厚生労働省令", ch:["厚生労働省令","政令","都道府県条例","内閣府令"] },
+  { id:14, cat:"③調理師の免許（第三条二号）",
+    q:"厚生労働省令の定めるものにおいて【】以上調理の業務に従事した後、調理師試験に合格したもの",
+    a:"2年", ch:["2年","1年","3年","6か月"] },
+  { id:15, cat:"③調理師試験",
+    q:"調理師試験は、【】の定める基準により、調理、栄養及び衛生に関して必要な知識及び技能について、都道府県知事が行う。",
+    a:"厚生労働大臣", ch:["厚生労働大臣","都道府県知事","文部科学大臣","内閣総理大臣"] },
+  { id:16, cat:"③調理師試験",
+    q:"調理師試験は、厚生労働大臣の定める基準により、調理、栄養及び衛生に関して必要な知識及び技能について、【】が行う。",
+    a:"都道府県知事", ch:["都道府県知事","厚生労働大臣","市町村長","保健所長"] },
+  { id:17, cat:"③施設又は営業の指定",
+    q:"法第三条第一項第二号等に規定する【】で定める施設又は営業は次のとおりとする。",
+    a:"厚生労働省令", ch:["厚生労働省令","政令","都道府県条例","内閣府令"] },
+  { id:18, cat:"③施設又は営業の指定",
+    q:"【】、学校、病院等の施設であって飲食物を調理して供与するもの",
+    a:"寄宿舎", ch:["寄宿舎","老人ホーム","保育所","社会福祉施設"] },
+  { id:19, cat:"食品衛生法施行令（営業の指定）",
+    q:"第三十五条一号【】（一般食堂、料理店、すし屋、そば屋、旅館、仕出し屋、弁当屋、レストラン、カフェーその他食品を調理し、又は設備を設けて客に飲食させる営業をいい、次号に該当する営業を除く。）",
+    a:"飲食店営業", ch:["飲食店営業","喫茶店営業","食料品販売業","惣菜製造業"] },
+  { id:20, cat:"食品衛生法施行令（営業の指定）",
+    q:"第三十五条十四号【】（店舗を設け、鮮魚介類を販売する営業をいい、魚介類を生きているまま販売する営業及び次号に該当する営業を除く。）",
+    a:"魚介類販売業", ch:["魚介類販売業","食肉販売業","食料品販売業","鮮魚小売業"] },
+  { id:21, cat:"食品衛生法施行令（営業の指定）",
+    q:"第三十五条三十二号【】（通常副食物として供される煮物、焼物、揚物、蒸し物、酢の物又はあえ物を製造する営業をいい…）",
+    a:"そうざい製造業", ch:["そうざい製造業","食肉製品製造業","豆腐製造業","菓子製造業"] },
+  { id:22, cat:"④調理師免許の申請等（絶対的欠格事由）",
+    q:"第四条第二号に該当し、同条の規定により免許の【】を受けた後1年を経過しない者には、第三条の免許を与えない。",
+    a:"取消処分", ch:["取消処分","停止処分","業務禁止処分","失効処分"] },
+  { id:23, cat:"④調理師免許の申請等（絶対的欠格事由）",
+    q:"免許の取消処分を受けた後【】を経過しない者には、第三条の免許を与えない。",
+    a:"1年", ch:["1年","2年","3年","6か月"] },
+  { id:24, cat:"④調理師免許の申請等（相対的欠格事由）",
+    q:"次の各号のいずれかに該当する者には、第三条の免許を【】。（麻薬・あへん・大麻・覚せい剤の中毒者、罰金以上の刑に処せられた者）",
+    a:"与えないことがある", ch:["与えないことがある","与えない","停止することがある","取消すことがある"] },
+  { id:25, cat:"④調理師免許の申請等（相対的欠格事由）",
+    q:"【】以上の刑に処せられた者には、調理師免許を与えないことがある。",
+    a:"罰金以上", ch:["罰金以上","懲役以上","拘留以上","科料以上"] },
+  { id:26, cat:"④調理師名簿・登録及び免許証の交付",
+    q:"免許は、【】ことによって行う。",
+    a:"調理師名簿に登録する", ch:["調理師名簿に登録する","免許証を交付する","申請書を受理する","試験に合格する"] },
+  { id:27, cat:"④調理師名簿・登録及び免許証の交付",
+    q:"【】は、免許を与えたときは、調理師免許証を交付する。",
+    a:"都道府県知事", ch:["都道府県知事","厚生労働大臣","市町村長","保健所長"] },
+  { id:28, cat:"④免許の取消し",
+    q:"【】は、調理師が次の各号のいずれかに該当するときは、その免許を取り消すことができる。",
+    a:"都道府県知事", ch:["都道府県知事","厚生労働大臣","市町村長","保健所長"] },
+  { id:29, cat:"④免許の申請（調理師法施行令）",
+    q:"調理師の免許を受けようとする者は、申請書に厚生労働省令で定める書類を添え、これを【】の都道府県知事に提出しなければならない。",
+    a:"住所地", ch:["住所地","本籍地","出生地","勤務地"] },
+  { id:30, cat:"⑤食品衛生法の対象",
+    q:"この法律で食品とは、すべての飲食物をいう。ただし、医薬品、医療機器等の品質、有効性及び安全性の確保等に関する法律に規定する【】、医薬部外品及び再生医療等製品は、これを含まない。",
+    a:"医薬品", ch:["医薬品","医療機器","再生医療等製品","特定保健用食品"] },
+  { id:31, cat:"⑤食品衛生法の対象",
+    q:"医薬品、【】及び再生医療等製品は、食品に含まない。",
+    a:"医薬部外品", ch:["医薬部外品","医療機器","特定保健用食品","健康食品"] },
+  { id:32, cat:"⑤食品衛生法の対象",
+    q:"この法律で【】とは、食品の製造の過程において又は食品の加工若しくは保存の目的で、食品に添加、混和、浸潤その他の方法によって使用される物をいう。",
+    a:"添加物", ch:["添加物","保存料","着色料","香料"] },
+  { id:33, cat:"⑤食品衛生法の対象",
+    q:"この法律で【】とは、動植物から得られた物又はその混合物で、食品の着香の目的で使用される添加物をいう。",
+    a:"天然香料", ch:["天然香料","合成香料","天然添加物","指定添加物"] },
+  { id:34, cat:"⑤食品衛生法の対象",
+    q:"この法律で【】とは、食品、添加物、器具・容器包装を対象とする飲食に関する衛生をいう。",
+    a:"食品衛生", ch:["食品衛生","公衆衛生","環境衛生","食品安全"] },
+  { id:35, cat:"⑤食品衛生法の対象",
+    q:"この法律で食品衛生とは、食品、添加物、【】を対象とする飲食に関する衛生をいう。",
+    a:"器具・容器包装", ch:["器具・容器包装","食品工場","調理施設","食品添加物"] },
+  { id:36, cat:"⑥食品等事業者の実務",
+    q:"【】は、販売食品等に起因する食品衛生上の危害の発生の防止に必要な限度において、当該食品等事業者に対して販売食品等又はその原材料の販売を行った者の名称その他必要な情報に関する記録を作成し、これを保存するよう努めなければならない。",
+    a:"食品営業者", ch:["食品営業者","食品事業者","食品製造者","食品販売者"] },
+  { id:37, cat:"⑦清潔衛生取り扱いの原則",
+    q:"販売（不特定又は多数の者に対する販売以外の授与を【】。以下同じ。）の用に供する食品又は添加物の採取、製造、加工、使用、調理、貯蔵、運搬、陳列及び授受は、清潔で衛生的に行われなければならない。",
+    a:"含む", ch:["含む","除く","含まない","指す"] },
+  { id:38, cat:"⑦清潔衛生取り扱いの原則",
+    q:"食品又は添加物の採取、製造、加工、使用、調理、貯蔵、運搬、陳列及び授受は、【】で衛生的に行われなければならない。",
+    a:"清潔", ch:["清潔","安全","適正","適切"] },
+  { id:39, cat:"⑧新開発食品の販売禁止",
+    q:"【】は、一般に飲食に供されることがなかった物であって人の健康を損なうおそれがないの旨の確認がないもの…食品として販売することを禁止することができる。",
+    a:"厚生労働大臣", ch:["厚生労働大臣","都道府県知事","内閣総理大臣","農林水産大臣"] },
+  { id:40, cat:"⑧新開発食品の販売禁止",
+    q:"必要があると認めるときは、【】の意見を聴いて、それらの物を食品として販売することを禁止することができる。",
+    a:"薬事・食品衛生審議会", ch:["薬事・食品衛生審議会","食品安全委員会","厚生科学審議会","中央社会保険医療協議会"] },
+  { id:41, cat:"⑨食品添加物の指定制",
+    q:"使用が認められている天然添加物として、【】に収載されているものがある。（天然香料・一般飲食物添加物・厚生労働大臣が定めた化学的合成品・天然添加物と並んで）",
+    a:"既存添加物名簿", ch:["既存添加物名簿","指定添加物リスト","食品添加物公定書","天然添加物データベース"] }
+];
+
+/* ======================================================
+   状態
+====================================================== */
+var mode = "input";   // "input" | "choice"
+var queue = [];
+var idx = 0;
+var okCnt = 0;
+var ngIds = [];
+var answered = false;
+
+/* ======================================================
+   LocalStorage
+====================================================== */
+var LS = "eisei_v2";
+function loadH() {
+  try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) { return {}; }
+}
+function saveH(h) {
+  try { localStorage.setItem(LS, JSON.stringify(h)); } catch(e) {}
+}
+
+/* ======================================================
+   画面
+====================================================== */
+function show(id) {
+  var ids = ["scr-home","scr-quiz","scr-result"];
+  for (var i = 0; i < ids.length; i++) {
+    document.getElementById(ids[i]).classList.remove("active");
+  }
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+/* ======================================================
+   ホーム統計
+====================================================== */
+function refreshHome() {
+  var h = loadH();
+  var sessions = h.sessions || [];
+  var tc = 0, tq = 0;
+  for (var i = 0; i < sessions.length; i++) { tc += sessions[i].c; tq += sessions[i].t; }
+  var rate = tq > 0 ? Math.round(tc / tq * 100) : 0;
+  document.getElementById("s-total").textContent  = Q.length;
+  document.getElementById("s-master").textContent = (h.mastered || []).length;
+  document.getElementById("s-rate").textContent   = rate + "%";
+  if (h.lastDate) document.getElementById("home-last").textContent = "最終学習：" + h.lastDate;
+}
+
+/* ======================================================
+   モード選択
+====================================================== */
+function selectMode(m) {
+  mode = m;
+  document.getElementById("mc-input").classList.toggle("sel", m === "input");
+  document.getElementById("mc-choice").classList.toggle("sel", m === "choice");
+  document.getElementById("chk-input").style.visibility  = m === "input"  ? "visible" : "hidden";
+  document.getElementById("chk-choice").style.visibility = m === "choice" ? "visible" : "hidden";
+}
+
+/* ======================================================
+   クイズ開始
+====================================================== */
+function startQuiz(reviewIds) {
+  var rand = document.getElementById("opt-rand").checked;
+  var missOnly = document.getElementById("opt-miss").checked;
+  var h = loadH();
+  var pool;
+
+  if (reviewIds) {
+    pool = Q.filter(function(q){ return reviewIds.indexOf(q.id) >= 0; });
+    if (!pool.length) { alert("間違えた問題がありません"); return; }
+  } else if (missOnly) {
+    var mids = h.lastWrong || [];
+    pool = Q.filter(function(q){ return mids.indexOf(q.id) >= 0; });
+    if (!pool.length) { alert("間違えた問題がありません"); return; }
+  } else {
+    pool = Q.slice();
+  }
+
+  queue = rand ? shuffle(pool) : pool;
+  idx = 0; okCnt = 0; ngIds = []; answered = false;
+
+  document.getElementById("mode-pill").textContent =
+    mode === "input" ? "✏️ 入力モード" : "🔘 ４択モード";
+
+  show("scr-quiz");
+  render();
+}
+
+/* ======================================================
+   描画
+====================================================== */
+function render() {
+  var q = queue[idx];
+  var total = queue.length;
+  document.getElementById("prog").style.width = (idx / total * 100) + "%";
+  document.getElementById("q-count").textContent = (idx + 1) + " / " + total;
+  if (mode === "input") renderInput(q);
+  else renderChoice(q);
+}
+
+function qHTML(text) {
+  var esc = text
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+  return esc.replace("【】", '<span class="blank" id="blank">　　　　</span>');
+}
+
+function renderInput(q) {
+  answered = false;
+  var body = document.getElementById("quiz-body");
+  body.innerHTML =
+    '<div class="cat-badge">' + esc(q.cat) + '</div>' +
+    '<div class="q-card">' + qHTML(q.q) + '</div>' +
+    '<div class="score-bar">' +
+      '<span class="s-ok">正解 ' + okCnt + '問</span>' +
+      '<span class="s-all">/ ' + idx + '問完了</span>' +
+    '</div>' +
+    '<div class="inp-wrap">' +
+      '<input class="ans-inp" id="ainp" type="text" placeholder="答えを入力..." ' +
+        'autocomplete="off" autocorrect="off" autocapitalize="off" ' +
+        'spellcheck="false" inputmode="text">' +
+      '<button class="btn-judge" id="bjudge" type="button">判定する</button>' +
+    '</div>' +
+    '<div class="fb" id="fb"><span class="fb-ico" id="fbico"></span><span class="fb-txt" id="fbtxt"></span></div>' +
+    '<button class="btn-next" id="bnext" type="button">次の問題へ ›</button>';
+
+  var ainp = document.getElementById("ainp");
+  var bjudge = document.getElementById("bjudge");
+  var bnext  = document.getElementById("bnext");
+
+  bjudge.addEventListener("click", function(){ judge(); });
+  bnext.addEventListener("click", function(){ nextQ(); });
+  ainp.addEventListener("keydown", function(e){
+    if (e.key === "Enter" || e.keyCode === 13) {
+      e.preventDefault();
+      if (!answered) judge(); else nextQ();
+    }
+  });
+  setTimeout(function(){ ainp.focus(); }, 100);
+}
+
+function judge() {
+  if (answered) return;
+  var q = queue[idx];
+  var raw = document.getElementById("ainp").value;
+  var norm = raw.replace(/[\s　]/g, "");
+  var ans  = q.a.replace(/[\s　]/g, "");
+  var ok = (norm === ans);
+  answered = true;
+  applyResult(ok, q.a);
+  var bjudge = document.getElementById("bjudge");
+  var ainp   = document.getElementById("ainp");
+  if (bjudge) bjudge.disabled = true;
+  if (ainp)   ainp.disabled   = true;
+}
+
+function renderChoice(q) {
+  answered = false;
+  var shuf = shuffle(q.ch.slice());
+  var lbls = ["A","B","C","D"];
+  var btns = "";
+  for (var i = 0; i < shuf.length; i++) {
+    btns += '<button class="choice" data-val="' + esc(shuf[i]) + '" type="button">' +
+      '<span class="c-lbl">' + lbls[i] + '</span>' +
+      '<span>' + esc(shuf[i]) + '</span></button>';
+  }
+  var body = document.getElementById("quiz-body");
+  body.innerHTML =
+    '<div class="cat-badge">' + esc(q.cat) + '</div>' +
+    '<div class="q-card">' + qHTML(q.q) + '</div>' +
+    '<div class="score-bar">' +
+      '<span class="s-ok">正解 ' + okCnt + '問</span>' +
+      '<span class="s-all">/ ' + idx + '問完了</span>' +
+    '</div>' +
+    '<div class="choices">' + btns + '</div>' +
+    '<div class="fb" id="fb"><span class="fb-ico" id="fbico"></span><span class="fb-txt" id="fbtxt"></span></div>' +
+    '<button class="btn-next" id="bnext" type="button">次の問題へ ›</button>';
+
+  var choices = body.querySelectorAll(".choice");
+  for (var j = 0; j < choices.length; j++) {
+    (function(btn){
+      btn.addEventListener("click", function(){
+        if (answered) return;
+        answered = true;
+        var chosen = btn.getAttribute("data-val");
+        var correct = queue[idx].a;
+        var ok = (chosen === correct);
+        // すべて無効化・正解表示
+        for (var k = 0; k < choices.length; k++) {
+          choices[k].disabled = true;
+          var v = choices[k].getAttribute("data-val");
+          if (v === correct) {
+            choices[k].classList.add(choices[k] === btn ? (ok ? "ok" : "reveal") : "reveal");
+          }
+        }
+        if (!ok) btn.classList.add("ng");
+        applyResult(ok, correct);
+      });
+    })(choices[j]);
+  }
+
+  document.getElementById("bnext").addEventListener("click", function(){ nextQ(); });
+}
+
+function applyResult(ok, answer) {
+  var blank = document.getElementById("blank");
+  if (blank) {
+    blank.textContent = answer;
+    blank.classList.add(ok ? "ok" : "ng");
+  }
+  var fb    = document.getElementById("fb");
+  var fbico = document.getElementById("fbico");
+  var fbtxt = document.getElementById("fbtxt");
+  fb.classList.add("show");
+  if (ok) {
+    fb.classList.add("ok");
+    fbico.textContent = "✅";
+    fbtxt.textContent = "正解！";
+    okCnt++;
+  } else {
+    fb.classList.add("ng");
+    fbico.textContent = "❌";
+    fbtxt.innerHTML = "不正解。<br>正解は「<strong>" + esc(answer) + "</strong>」";
+    ngIds.push(queue[idx].id);
+  }
+  document.getElementById("bnext").classList.add("show");
+}
+
+function nextQ() {
+  idx++;
+  if (idx >= queue.length) finish();
+  else { window.scrollTo(0,0); render(); }
+}
+
+/* ======================================================
+   結果
+====================================================== */
+function finish() {
+  var total = queue.length;
+  var pct = Math.round(okCnt / total * 100);
+
+  // 保存
+  var h = loadH();
+  h.sessions = h.sessions || [];
+  h.sessions.push({ c: okCnt, t: total });
+  if (h.sessions.length > 50) h.sessions = h.sessions.slice(-50);
+  h.lastWrong = ngIds.slice();
+  h.lastDate  = nowStr();
+  h.mastered  = h.mastered || [];
+  for (var i = 0; i < queue.length; i++) {
+    var qid = queue[i].id;
+    if (ngIds.indexOf(qid) < 0 && h.mastered.indexOf(qid) < 0) h.mastered.push(qid);
+  }
+  saveH(h);
+
+  // 表示
+  var emoji = pct === 100 ? "🏆" : pct >= 80 ? "🎉" : pct >= 60 ? "😊" : "💪";
+  document.getElementById("r-emoji").textContent = emoji;
+  document.getElementById("r-pct").innerHTML = pct + "<span>%</span>";
+  document.getElementById("r-detail").textContent = okCnt + "問正解 / " + total + "問中";
+
+  var revBtn   = document.getElementById("btn-review");
+  var wrongCard = document.getElementById("wrong-card");
+  if (ngIds.length > 0) {
+    revBtn.style.display = "block";
+    wrongCard.style.display = "block";
+    var wb = document.getElementById("wrong-body");
+    wb.innerHTML = "";
+    for (var j = 0; j < ngIds.length; j++) {
+      var found = null;
+      for (var k = 0; k < Q.length; k++) { if (Q[k].id === ngIds[j]) { found = Q[k]; break; } }
+      if (!found) continue;
+      var preview = found.q.replace("【】","＿＿");
+      if (preview.length > 42) preview = preview.slice(0, 42) + "…";
+      var d = document.createElement("div");
+      d.className = "wrong-item";
+      d.innerHTML = esc(preview) + "<br>→ <span class='wrong-ans'>" + esc(found.a) + "</span>";
+      wb.appendChild(d);
+    }
+  } else {
+    revBtn.style.display = "none";
+    wrongCard.style.display = "none";
+  }
+  show("scr-result");
+}
+
+/* ======================================================
+   ユーティリティ
+====================================================== */
+function shuffle(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+function esc(s) {
+  return String(s)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+function nowStr() {
+  var d = new Date();
+  return d.getFullYear() + "/" +
+    pad(d.getMonth()+1) + "/" + pad(d.getDate()) + " " +
+    pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+/* ======================================================
+   イベントバインド（全部ここでまとめて登録）
+====================================================== */
+document.addEventListener("DOMContentLoaded", function() {
+  refreshHome();
+
+  // モードカード
+  document.getElementById("mc-input").addEventListener("click", function(){ selectMode("input"); });
+  document.getElementById("mc-choice").addEventListener("click", function(){ selectMode("choice"); });
+
+  // ホームボタン
+  document.getElementById("btn-start").addEventListener("click", function(){ startQuiz(null); });
+  document.getElementById("btn-reset").addEventListener("click", function(){
+    if (confirm("学習履歴をすべてリセットしますか？")) {
+      localStorage.removeItem(LS);
+      refreshHome();
+    }
+  });
+
+  // 戻るボタン
+  document.getElementById("btn-back").addEventListener("click", function(){
+    if (confirm("ホームに戻りますか？（進捗はリセットされます）")) {
+      show("scr-home"); refreshHome();
+    }
+  });
+
+  // 結果ボタン
+  document.getElementById("btn-retry").addEventListener("click", function(){
+    show("scr-home"); setTimeout(function(){ startQuiz(null); }, 50);
+  });
+  document.getElementById("btn-review").addEventListener("click", function(){
+    var h = loadH();
+    var ids = h.lastWrong || [];
+    show("scr-home"); setTimeout(function(){ startQuiz(ids); }, 50);
+  });
+  document.getElementById("btn-rhome").addEventListener("click", function(){
+    show("scr-home"); refreshHome();
+  });
+
+  // 最初は home 表示
+  show("scr-home");
+});
+</script>
+</body>
+</html>
